@@ -1,9 +1,15 @@
 # USED AS REFERENCE https://gist.github.com/Integralist/3f004c3594bbf8431c15ed6db15809ae
+# README deste programa esta no repositorio do github https://github.com/fmariane/redes_tp0/blob/wip/README.md
 
 import socket
 import struct
 import sys
 import threading
+
+#====== Redes de computadores
+#====== TP0 - introducao a programacao com sockets
+#====== MARIANE FERNANDES DE OLIVEIRA
+
 
 #======== Decription function
 def caesar_cypher_dec(str, key):
@@ -20,40 +26,41 @@ def caesar_cypher_dec(str, key):
 
 #====== Network routines ==============
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-HOST = ''              # Não precisa indicar o endereço (é o da máquina local)
-PORT = 5000            # Porta que o servidor deve ficar
+HOST = ''                 # Não precisa indicar o endereço (é o da máquina local)
+PORT = int( sys.argv[1] ) # Porta que o servidor deve ficar
 orig = (HOST, PORT)
 
 # Deve primeiro iniciar a abertura passiva com bind e listen
 tcp.bind(orig)
 tcp.listen(10) #mantem no maximo 10 conexoes em espera
 
-# Agora está pronto para receber uma conexão vinda de um cliente
-#con, cliente = tcp.accept()
-
-
 #client_connection defined in while True statement
+#this is a worker function
 def clientThread(client_connection):
     ack_byte = "ACK".encode('ascii')
+    server_output = client_connection.recv(1024).decode('ascii')
     
     #receive from client 
-    msg_size = client_connection.recv(32) #4 byte integer
+    msg_size = client_connection.recv(32).decode('ascii') #4 byte integer
     client_connection.send(ack_byte)
     
     received = client_connection.recv(int(msg_size))
     client_connection.send(ack_byte)
     
-    cypher_key = client_connection.recv(32)
+    cypher_key = client_connection.recv(32).decode('ascii')
     client_connection.send(ack_byte)
     
     #decode msg according to caesar_cypher algo and send it back to client
-    decoded = caesar_cypher_dec(received, cypher_key)
+    decoded = caesar_cypher_dec(received, int(cypher_key))
     client_connection.send(decoded.encode('ascii'))
+    
+    print(server_output)
+    
     client_connection.close()
 
 while True:
     client_connection, address = tcp.accept()
-    print('Conectado por', address)
+    #print('Conectado por', address)
     
     client_worker_thread = threading.Thread(
         target=clientThread,
